@@ -68,7 +68,7 @@ impl HttpServer {
             r#"<!doctype html>
 <html>
 <head>
-    <title>{} API Documentation</title>
+    <title>{} - Sevria API Docs</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="icon" href="https://static.sevria.com/images/favicon.svg"/>
