@@ -9,6 +9,7 @@ use axum::{
     },
     routing::get,
 };
+use serde_json::{Value, json};
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
 use utoipa::OpenApi;
@@ -64,6 +65,7 @@ impl HttpServer {
         let (router, doc) = self.router.clone().split_for_parts();
 
         let mut router = router
+            .route("/", get(health_check))
             .merge(Scalar::with_url("/docs", doc.clone()))
             .route("/openapi.json", get(async move || Json(doc)));
 
@@ -89,4 +91,8 @@ impl HttpServer {
 
         Ok(())
     }
+}
+
+async fn health_check() -> Json<Value> {
+    Json(json!({ "status": "ok" }))
 }
