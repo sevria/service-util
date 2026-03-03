@@ -25,7 +25,7 @@ struct Doc;
 
 pub struct HttpServer {
     config: Arc<Config>,
-    router: OpenApiRouter,
+    pub router: OpenApiRouter,
 }
 
 impl HttpServer {
