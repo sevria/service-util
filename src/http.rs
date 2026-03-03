@@ -64,9 +64,26 @@ impl HttpServer {
         let listener = TcpListener::bind(&self.config.http.address).await?;
         let (router, doc) = self.router.clone().split_for_parts();
 
+        let custom_html = format!(
+            r#"<!doctype html>
+<html>
+<head>
+    <title>{} API Documentation</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="icon" href="https://static.sevria.com/images/favicon.svg"/>
+</head>
+<body>
+    <script id="api-reference" type="application/json">$spec</script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+</body>
+</html>"#,
+            self.config.openapi.info.title
+        );
+
         let mut router = router
             .route("/", get(health_check))
-            .merge(Scalar::with_url("/docs", doc.clone()))
+            .merge(Scalar::with_url("/docs", doc.clone()).custom_html(custom_html))
             .route("/openapi.json", get(async move || Json(doc)));
 
         if let Some(allowed_origins) = &self.config.cors.allowed_origins {
