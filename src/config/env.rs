@@ -1,4 +1,23 @@
-use envconfig::{Envconfig, Error};
+use anyhow::Result;
+use dotenvy::dotenv;
+use env_logger::Env as LogEnv;
+use envconfig::Envconfig;
+
+pub fn load_env() -> Result<()> {
+    dotenv()?;
+    env_logger::Builder::from_env(LogEnv::default().default_filter_or("info")).init();
+    Ok(())
+}
+
+#[derive(Debug, Envconfig)]
+pub struct BaseEnv {
+    #[envconfig(nested)]
+    pub cors: Cors,
+    #[envconfig(nested)]
+    pub http: Http,
+    #[envconfig(nested)]
+    pub openapi: OpenApi,
+}
 
 #[derive(Debug, Envconfig)]
 pub struct Cors {
@@ -28,20 +47,4 @@ pub struct OpenApiInfo {
     pub version: String,
     #[envconfig(from = "OPENAPI_INFO_DESCRIPTION")]
     pub description: Option<String>,
-}
-
-#[derive(Debug, Envconfig)]
-pub struct Config {
-    #[envconfig(nested)]
-    pub cors: Cors,
-    #[envconfig(nested)]
-    pub http: Http,
-    #[envconfig(nested)]
-    pub openapi: OpenApi,
-}
-
-impl Config {
-    pub fn init() -> Result<Self, Error> {
-        Config::init_from_env()
-    }
 }
