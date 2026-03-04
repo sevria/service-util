@@ -14,7 +14,7 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 
-use crate::config::env::BaseEnv;
+use crate::env::BaseEnv;
 
 #[derive(OpenApi)]
 #[openapi()]
