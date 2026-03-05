@@ -1,12 +1,14 @@
 use anyhow::Result;
 use axum::{
-    Json,
+    extract::{FromRequest, rejection::JsonRejection},
     http::{
         HeaderValue, Method,
         header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     },
+    response::{IntoResponse, Response},
     routing::get,
 };
+use serde::Serialize;
 use serde_json::{Value, json};
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
@@ -14,7 +16,24 @@ use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_scalar::{Scalar, Servable};
 
-use crate::env::BaseEnv;
+use crate::{env::BaseEnv, error::Error};
+
+#[derive(FromRequest)]
+#[from_request(via(axum::Json), rejection(Error))]
+pub struct Json<T>(pub T);
+
+impl<T: Serialize> IntoResponse for Json<T> {
+    fn into_response(self) -> Response {
+        let Self(value) = self;
+        axum::Json(value).into_response()
+    }
+}
+
+impl From<JsonRejection> for Error {
+    fn from(err: JsonRejection) -> Self {
+        Error::BadRequest(err.to_string())
+    }
+}
 
 #[derive(OpenApi)]
 #[openapi()]
