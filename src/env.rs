@@ -1,12 +1,10 @@
-use anyhow::Result;
 use dotenvy::dotenv;
 use env_logger::Env as LogEnv;
 use envconfig::Envconfig;
 
-pub fn load_env() -> Result<()> {
-    dotenv()?;
+pub fn load_env() {
+    dotenv().ok();
     env_logger::Builder::from_env(LogEnv::default().default_filter_or("info")).init();
-    Ok(())
 }
 
 #[derive(Debug, Envconfig)]
