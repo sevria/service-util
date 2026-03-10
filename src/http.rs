@@ -39,13 +39,19 @@ impl From<JsonRejection> for Error {
 #[openapi()]
 struct Doc;
 
-pub struct HttpServer;
+pub struct HttpServer {
+    env: BaseEnv,
+    router: OpenApiRouter,
+}
 
 impl HttpServer {
-    pub fn new(env: &BaseEnv) -> OpenApiRouter {
-        let doc = Self::create_doc(env);
+    pub fn new(env: BaseEnv, router: OpenApiRouter) -> Self {
+        let doc = Self::create_doc(&env);
 
-        OpenApiRouter::with_openapi(doc)
+        Self {
+            env: env,
+            router: OpenApiRouter::with_openapi(doc).merge(router),
+        }
     }
 
     fn create_doc(env: &BaseEnv) -> utoipa::openapi::OpenApi {
@@ -70,18 +76,13 @@ impl HttpServer {
 
         doc
     }
-}
 
-async fn health_check() -> Json<Value> {
-    Json(json!({ "status": "ok" }))
-}
+    pub async fn start(self) -> Result<()> {
+        let listener = TcpListener::bind(&self.env.http.address).await?;
+        let (router, doc) = self.router.split_for_parts();
 
-pub async fn start_http_server(env: &BaseEnv, router: OpenApiRouter) -> Result<()> {
-    let listener = TcpListener::bind(&env.http.address).await?;
-    let (router, doc) = router.split_for_parts();
-
-    let custom_html = format!(
-        r#"<!doctype html>
+        let custom_html = format!(
+            r#"<!doctype html>
 <html>
 <head>
     <title>{} - Sevria API Docs</title>
@@ -94,33 +95,38 @@ pub async fn start_http_server(env: &BaseEnv, router: OpenApiRouter) -> Result<(
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
 </body>
 </html>"#,
-        env.openapi.info.title
-    );
-
-    let mut router = router
-        .route("/", get(health_check))
-        .merge(Scalar::with_url("/docs", doc.clone()).custom_html(custom_html))
-        .route("/openapi.json", get(async move || Json(doc)));
-
-    if let Some(allowed_origins) = &env.cors.allowed_origins {
-        router = router.layer(
-            CorsLayer::new()
-                .allow_origin(allowed_origins.parse::<HeaderValue>().unwrap())
-                .allow_methods([
-                    Method::OPTIONS,
-                    Method::GET,
-                    Method::POST,
-                    Method::PUT,
-                    Method::PATCH,
-                    Method::DELETE,
-                ])
-                .allow_headers([ACCEPT, AUTHORIZATION, CONTENT_TYPE]),
+            self.env.openapi.info.title
         );
+
+        let mut router = router
+            .route("/", get(health_check))
+            .merge(Scalar::with_url("/docs", doc.clone()).custom_html(custom_html))
+            .route("/openapi.json", get(async move || Json(doc)));
+
+        if let Some(allowed_origins) = &self.env.cors.allowed_origins {
+            router = router.layer(
+                CorsLayer::new()
+                    .allow_origin(allowed_origins.parse::<HeaderValue>().unwrap())
+                    .allow_methods([
+                        Method::OPTIONS,
+                        Method::GET,
+                        Method::POST,
+                        Method::PUT,
+                        Method::PATCH,
+                        Method::DELETE,
+                    ])
+                    .allow_headers([ACCEPT, AUTHORIZATION, CONTENT_TYPE]),
+            );
+        }
+
+        log::info!("Running HTTP server on {}", &self.env.http.address);
+
+        axum::serve(listener, router).await?;
+
+        Ok(())
     }
+}
 
-    log::info!("Running HTTP server on {}", &env.http.address);
-
-    axum::serve(listener, router).await?;
-
-    Ok(())
+async fn health_check() -> Json<Value> {
+    Json(json!({ "status": "ok" }))
 }
