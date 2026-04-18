@@ -1,6 +1,11 @@
 [package]
-name = "service-util"
+name = "sevria-service-util"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/sevria/service-util"
+homepage = "https://github.com/sevria/service-util"
+description = "Reusable utilities for backend service development."
 
 [dependencies]
