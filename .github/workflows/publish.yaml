@@ -1,0 +1,12 @@
+name: Publish
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  publish:
+    uses: sevria/actions/.github/workflows/publish-rust-crate.yaml@main
+    secrets: inherit
