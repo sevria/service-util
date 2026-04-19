@@ -9,3 +9,9 @@ homepage = "https://github.com/sevria/service-util"
 description = "Reusable utilities for backend service development."
 
 [dependencies]
+axum = { version = "0.8.9", features = ["macros"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+thiserror = "2.0.18"
+utoipa = "5.4.0"
+validator = { version = "0.20.0", features = ["derive"] }
